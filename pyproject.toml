@@ -1,0 +1,12 @@
+[project]
+name = "my-bitcoin-predictor"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.10.6",
+    "pydantic-settings>=2.8.1",
+    "quixstreams>=3.13.1",
+    "websocket-client>=1.8.0",
+]
