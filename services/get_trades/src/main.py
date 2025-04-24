@@ -9,62 +9,46 @@
 from quixstreams import Application
 from config import Settings
 from api_kraken import Kraken_Api
-from model import Trade
-import json
-
+from loguru import logger
 
 def run(
+        kafka_host: str,
         kraken_api: Kraken_Api
     ):
-    
-    #create connection with kraken api
-    ws = kraken_api.create_connection()
+
+    # Create an Application - the main configuration entry point
+    app = Application(broker_address= kafka_host, consumer_group="text-splitter-v1")
+
+    # Define a topic with chat messages in JSON format
+    messages_topic = app.topic(name="trades", value_serializer="json")
 
     #create instance trade object where data will be saved
-    trades_list = []
-    while True:
-        #query over kraken api on a infinite loop
-        result = ws.recv()
-        #transform str result into a dictionary
-        results = json.loads(result)
-        #save trade in trades_list
-        save_trade(results, trades_list)
- 
+    with app.get_producer() as producer:
+        while True:
+            #query over kraken api on a infinite loop
+            events : list[Trade] = kraken_api.get_trades() 
+            
+            for event in events:
+                #breakpoint()
+                # Serialise trade object to dictionary
+                message = messages_topic.serialize(key=event.symbol, value=event.model_dump())
+                # 3. Produce a message into the Kafka topic
+                producer.produce(topic=messages_topic.name, value=message.value, key=message.key)
 
-def save_trade(
-    results: dict,
-    trades_list: list[Trade]
-) -> list:
-
-    #if result[channel] is hearteat skip, if channel = trade save in a object
-    if 'channel' in results and results['channel'] == 'trade':
-        trades = results['data']
-        for trade in trades:
-            new_trade = Trade(
-                symbol= trade['symbol'],
-                side= trade['side'],
-                price= trade['price'],
-                qty= trade['qty'],
-                ord_type= trade['ord_type'],
-                trade_id= trade['trade_id'],
-                timestamp= trade['timestamp']                
-                )
-            trades_list.append(new_trade)    
-    return trades_list
+                # logger.info(f'Produced message to topic {topic.name}')
+                logger.info(f'Trade {event.model_dump()} pushed to Kafa')
+        
 
 if __name__ == '__main__':
     #Import enviromental variables
     config = Settings()
 
+    KAFKA_HOST = config.kafka_host
+    CRYPTOS_ID = config.cryptos_id
+
     #create instance of kraken api
-    kraken_api = Kraken_Api(config.cryptos_id)
+    kraken_api = Kraken_Api(CRYPTOS_ID)
 
-    # Create an Application - the main configuration entry point
-    app = Application(broker_address=config.kafka_host, consumer_group="text-splitter-v1")
-
-    # Define a topic with chat messages in JSON format
-    messages_topic = app.topic(name="messages", value_serializer="json")
-
-    run(kraken_api)
+    run(KAFKA_HOST,kraken_api)
 
 
