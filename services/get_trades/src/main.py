@@ -8,43 +8,32 @@
 
 from quixstreams import Application
 from config import Settings
-from websocket import create_connection
-import json
+from api_kraken import Kraken_Api
 
-def run():
 
-    #Kraken socket URL
-    kraken_url = "wss://ws.kraken.com/"
-
-    #Kraken subscription info.
-    subscription = {
-                    "event":"subscribe", 
-                    "subscription":{"name":"ticker"},
-                    "pair":["BTC/USD"]
-                    }
-    #create connection with socket                    
-    ws = create_connection(kraken_url)
-
-    #Send subscription info. as texr
-    subscription = json.dumps(subscription)
-
-    ws.send(subscription)
+def run(
+        kraken_api: Kraken_Api
+    ):
     
-    print(ws.recv())
+    ws = kraken_api.create_connection()
 
-    print("it has run")
-    return 1
+    while 1:
+        print(ws.recv())
+    
 
 if __name__ == '__main__':
     #Import enviromental variables
     config = Settings()
-    KAFKA_HOST = config.kafka_host
+
+    #create instance of kraken api
+    kraken_api = Kraken_Api(config.cryptos_id)
 
     # Create an Application - the main configuration entry point
-    app = Application(broker_address=KAFKA_HOST, consumer_group="text-splitter-v1")
+    app = Application(broker_address=config.kafka_host, consumer_group="text-splitter-v1")
 
     # Define a topic with chat messages in JSON format
     messages_topic = app.topic(name="messages", value_serializer="json")
-    
-    run()
+
+    run(kraken_api)
+
 
