@@ -11,3 +11,6 @@ dependencies = [
     "quixstreams>=3.13.1",
     "websocket-client>=1.8.0",
 ]
+
+[tool.uv.workspace]
+members = ["services/candles"]

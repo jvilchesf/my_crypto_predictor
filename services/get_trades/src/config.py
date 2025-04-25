@@ -7,5 +7,4 @@ class Settings(BaseSettings):
     cryptos_id: list = ['BTC/USD',
                         'ETH/USD'
                     ]
-
 config = Settings()
