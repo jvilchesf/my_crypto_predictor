@@ -6,3 +6,4 @@ class Settings(BaseSettings):
     KAFKA_HOST: str
     TIMEFRAME_CANDLE: int
     MAX_CANDLE_STATE: int
+    LIST_SMA_PERIODS: list[int]

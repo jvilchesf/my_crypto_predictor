@@ -19,7 +19,7 @@ def compare_equal_start_time(new_candle: dict, last_historical_candle: dict) -> 
         )
 
 #Add candle to state, save them in memory to calculate technical indicators
-def update_candle_in_state(candle: dict, state: State):
+def update_candles_in_state(candle: dict, state: State):
 
     '''
     This is an state function on charge of updating candles in memory.
@@ -39,7 +39,7 @@ def update_candle_in_state(candle: dict, state: State):
         State: The updated state object containing the current candles
     '''
     config = Settings()
-    breakpoint()
+    
     candles = state.get('candles', default=[])
 
     #If there are no candles, add the first one
@@ -64,5 +64,5 @@ def update_candle_in_state(candle: dict, state: State):
     #return new state
     state.set('candles', candles)      
 
-    return state
+    return candle
     
