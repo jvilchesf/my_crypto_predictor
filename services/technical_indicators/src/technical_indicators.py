@@ -36,7 +36,29 @@ def calculate_technical_indicators(candle: dict, state: State):
     indicators['sma_21'] = stream.SMA(close, timeperiod=list_sma_periods[2])
     indicators['sma_60'] = stream.SMA(close, timeperiod=list_sma_periods[3])
 
-    
+    #Exponential moving average
+    indicators['ema_7'] = stream.EMA(close, timeperiod=list_sma_periods[0])
+    indicators['ema_14'] = stream.EMA(close, timeperiod=list_sma_periods[1])
+    indicators['ema_21'] = stream.EMA(close, timeperiod=list_sma_periods[2])
+    indicators['ema_60'] = stream.EMA(close, timeperiod=list_sma_periods[3])
+
+    #RSI
+    indicators['rsi_7'] = stream.RSI(close, timeperiod=list_sma_periods[0])
+    indicators['rsi_14'] = stream.RSI(close, timeperiod=list_sma_periods[1])
+    indicators['rsi_21'] = stream.RSI(close, timeperiod=list_sma_periods[2])
+    indicators['rsi_60'] = stream.RSI(close, timeperiod=list_sma_periods[3])
+
+    #MACD
+    indicators['macd_7'], indicators['macdsignal_7'], indicators['macdhist_7'] = stream.MACD(
+        close,
+        fastperiod=list_sma_periods[0],
+        slowperiod=list_sma_periods[1],
+        signalperiod=list_sma_periods[2]
+    )
+
+    # #OBV On balance volume indicator
+    indicators['obv_7'] = stream.OBV(close, volume)
+
     #breakpoint()
 
     return{

@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: technical-indicators
+  labels:
+    app: technical-indicators
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: technical-indicators
+  template:
+    metadata:
+      labels:
+        app: technical-indicators
+    spec:
+      containers:
+      - name: technical-indicators
+        image: technical-indicators-image
+        imagePullPolicy: Never # Use the local image
+        env:
+        - name: KAFKA_HOST
+          value: kafka-e11b-kafka-bootstrap.kafka.svc.cluster.local:9092
+        - name: KAFKA_TOPIC
+          value: "technical-indicators"
+        - name: TIMEFRAME_CANDLE
+          value: "60"
+        - name: MAX_CANDLE_STATE
+          value: "1000"
+        - name: LIST_SMA_PERIODS
+          value: "[7, 14, 21, 60]"  
