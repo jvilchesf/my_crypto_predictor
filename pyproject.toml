@@ -13,4 +13,4 @@ dependencies = [
 ]
 
 [tool.uv.workspace]
-members = ["services/candles"]
+members = ["services/candles", "services/technical_indicators"]

@@ -1,4 +1,3 @@
-from turtle import update
 from quixstreams import Application
 from config import Settings
 from datetime import timedelta
@@ -44,11 +43,14 @@ def run(
     # Create an Application - the main configuration to connect to a kafka cluster
     app = Application(broker_address=kafka_host, consumer_group="candles-v1", auto_offset_reset='earliest')
 
-    # Define a topic and deserializer
-    topic = app.topic(name='trades', value_deserializer='json')
+    # Define a topic input and deserializer
+    topic_input = app.topic(name='trades', value_deserializer='json')
+
+    # Define a topic output and deserializer
+    topic_output = app.topic(name='candles', value_deserializer='json')
 
     # Create a stream channel to receive data in a pandas-like dataframe
-    sdf = app.dataframe(topic)
+    sdf = app.dataframe(topic_input)
 
     sdf = (
     # Define a tumbling window of 10 seconds
@@ -92,6 +94,9 @@ def run(
 
     # Print the input data
     sdf = sdf.update(lambda message: print(f"Input:  {message}"))
+
+    # Send the output data
+    sdf = sdf.to_topic(topic_output)
 
     # Start the stream processing
     app.run(sdf)
