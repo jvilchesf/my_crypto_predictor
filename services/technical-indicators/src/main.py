@@ -56,6 +56,13 @@ def run(
 
 if __name__ == '__main__':
 
+    # Load tables in risingwave
+    #It is possible to do it row by row from kafka topic 
+    #https://docs.risingwave.com/python-sdk/intro
+    # or
+    # use a migration database tool, will do it in chunks 
+    #https://github.com/vajol/python-data-engineering-resources/blob/main/resources/db-migration.md
+
     #Import enviroment variables
     config = Settings()
 

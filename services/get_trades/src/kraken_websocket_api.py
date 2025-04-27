@@ -3,16 +3,16 @@ from model import Trade
 import json
 import loguru
 
-class Kraken_Api:
+class Kraken_WebSocket_API:
+
+    #Kraken socket URL
+    kraken_url = "wss://ws.kraken.com/v2"
 
     def __init__ (
         self,
         cryptos_id: list[str]
         ):
-    
-        #Kraken socket URL
-        self.kraken_url = "wss://ws.kraken.com/v2"
-
+        
         #create connection with socket          
         try:          
             self.ws_client = create_connection(self.kraken_url)

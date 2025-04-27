@@ -28,4 +28,4 @@ spec:
         - name: MAX_CANDLE_STATE
           value: "1000"
         - name: LIST_SMA_PERIODS
-          value: "[7, 14, 21, 60]"  
+          value: "[7, 14, 21, 60]"

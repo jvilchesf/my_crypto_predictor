@@ -7,13 +7,15 @@
 #             - Load topic
 
 from quixstreams import Application
-from config import Settings
-from api_kraken import Kraken_Api
+from config import config
+from kraken_websocket_api import Kraken_WebSocket_API
 from loguru import logger
+from model import Trade
+from kraken_rest_api import Kraken_Rest_API
 
 def run(
         kafka_host: str,
-        kraken_api: Kraken_Api
+        api
     ):
 
     # Create an Application - the main configuration entry point
@@ -26,7 +28,7 @@ def run(
     with app.get_producer() as producer:
         while True:
             #query over kraken api on a infinite loop
-            events : list[Trade] = kraken_api.get_trades() 
+            events : list[Trade] = api.get_trades() 
             
             for event in events:
                 #breakpoint()
@@ -40,15 +42,20 @@ def run(
         
 
 if __name__ == '__main__':
-    #Import enviromental variables
-    config = Settings()
+    
+    if config.live_or_historical == 'live':
+        logger.info("Starting live mode")
+        #create instance of webosocket kraken api
+        api = Kraken_WebSocket_API(config.cryptos_id)
+    elif config.live_or_historical == 'historical':
+        logger.info("Starting historical mode")
+        #create instance of rest kraken api
+        api = Kraken_Rest_API(config.cryptos_id[0], config.last_n_days_rest_api)
+    else:
+        logger.error("Invalid mode")
+        raise ValueError("Invalid mode")
+    
 
-    KAFKA_HOST = config.kafka_host
-    CRYPTOS_ID = config.cryptos_id
-
-    #create instance of kraken api
-    kraken_api = Kraken_Api(CRYPTOS_ID)
-
-    run(KAFKA_HOST,kraken_api)
+    run(config.kafka_host, api)
 
 

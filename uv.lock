@@ -6,7 +6,6 @@ requires-python = ">=3.12"
 members = [
     "candles",
     "my-bitcoin-predictor",
-    "technical-indicators",
 ]
 
 [[package]]
@@ -409,6 +408,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "quixstreams" },
+    { name = "requests" },
     { name = "ta-lib" },
     { name = "websocket-client" },
 ]
@@ -419,6 +419,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.10.6" },
     { name = "pydantic-settings", specifier = ">=2.8.1" },
     { name = "quixstreams", specifier = ">=3.13.1" },
+    { name = "requests", specifier = ">=2.32.3" },
     { name = "ta-lib", specifier = ">=0.6.3" },
     { name = "websocket-client", specifier = ">=1.8.0" },
 ]
@@ -780,11 +781,6 @@ dependencies = [
     { name = "setuptools" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/35/dc/e7fab66315fdd2e2eeb2e3dbb9d23ea615bafc1e9174a8965d310e40a3c2/ta_lib-0.6.3.tar.gz", hash = "sha256:0c628db09b3fab6e5c26979e608b674e7aecc10359c82ba8d53f729767a856ac", size = 376798 }
-
-[[package]]
-name = "technical-indicators"
-version = "0.1.0"
-source = { virtual = "services/technical_indicators" }
 
 [[package]]
 name = "typing-extensions"
