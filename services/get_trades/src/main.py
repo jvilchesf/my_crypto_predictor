@@ -6,27 +6,30 @@
 #             - Connect topic
 #             - Load topic
 
+from loguru import logger
 from quixstreams import Application
+
 from config import config
 from kraken_websocket_api import Kraken_WebSocket_API
-from loguru import logger
-from model import Trade
 from kraken_rest_api import Kraken_Rest_API
+from model import Trade
+
 
 def run(
         kafka_host: str,
-        api
+        kafka_topic_name: str,
+        api: Kraken_WebSocket_API | Kraken_Rest_API
     ):
 
     # Create an Application - the main configuration entry point
     app = Application(broker_address= kafka_host, consumer_group="text-splitter-v1")
 
     # Define a topic with chat messages in JSON format
-    messages_topic = app.topic(name="trades", value_serializer="json")
+    messages_topic = app.topic(name=kafka_topic_name, value_serializer="json")
 
     #create instance trade object where data will be saved
     with app.get_producer() as producer:
-        while True:
+        while not api.is_done:
             #query over kraken api on a infinite loop
             events : list[Trade] = api.get_trades() 
             
@@ -56,6 +59,6 @@ if __name__ == '__main__':
         raise ValueError("Invalid mode")
     
 
-    run(config.kafka_host, api)
+    run(config.kafka_host, config.kafka_topic_name, api)
 
 

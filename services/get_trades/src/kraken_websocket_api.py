@@ -12,7 +12,7 @@ class Kraken_WebSocket_API:
         self,
         cryptos_id: list[str]
         ):
-        
+
         #create connection with socket          
         try:          
             self.ws_client = create_connection(self.kraken_url)
@@ -93,3 +93,7 @@ class Kraken_WebSocket_API:
             _ = self.ws_client.recv()
 
         return None
+
+    def is_done() -> bool:
+        return False
+        
