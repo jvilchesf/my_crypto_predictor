@@ -9,13 +9,15 @@ URL = "https://api.kraken.com/0/public/Trades"
 class Kraken_Rest_API:
     def __init__(
         self, 
-        cryptos_id:str,
+        cryptos_id:list[str],
         last_n_days_rest_api: int
         ):
 
         # Initialize variables
         self.last_n_days_rest_api = last_n_days_rest_api
-        self.cryptos_id = cryptos_id
+
+        self.list_cryptos_id = cryptos_id
+        self.cryptos_id = self.list_cryptos_id[0]
 
         # Initialize flags to control process end
         self.is_done = False
@@ -41,10 +43,10 @@ class Kraken_Rest_API:
         #Step 2. Get trades from kraken rest api
         try:
             response = requests.request("GET", URL, headers=headers, params=params)
-            sleep(1) # to avoid too many requests
+            time.sleep(1) # to avoid too many requests
         except:
             loguru.logger.error(f"Error getting trades")
-            sleep(10)
+            time.sleep(10)
             raise
         
         #Step 3. Parse output as a dictionary
@@ -69,15 +71,21 @@ class Kraken_Rest_API:
             for trade in trades]
         
         #Step 5. Validate when is done
-        #Get last trade timestamp
-        self.since_timestamp_ns = data['result']['last']
-
-        #get time now in nanoseconds
-        time_now_ns = time.time_ns()
+        # update the since_timestamp_ns
+        self.since_timestamp_ns = int(float(data['result']['last']))
         
         #check if is done, if last timestamp pulled from the api is greather than current timestamp then finish
-        if int(self.since_timestamp_ns)> time_now_ns:
-            self.is_done = True
+        if self.since_timestamp_ns > int(time.time_ns() - 30 * 1e9):
+            #If it is the last trade. I have to be sure now if it is the last symbol or crypto
+            # If it is the last then finish and return is done True
+            if self.cryptos_id == self.list_cryptos_id[-1]:
+                self.is_done = True
+            # But if it is not the last it is necessary to re-assign cryptos_id and since_timestamp_ns    
+            else:
+                self.cryptos_id = self.list_cryptos_id[self.list_cryptos_id.index(self.cryptos_id) + 1]
+                self.since_timestamp_ns = int(
+                    time.time_ns() - self.last_n_days_rest_api * 24 * 60 * 60 * 1000000000
+                )
 
         return trades_list
 

@@ -53,7 +53,7 @@ if __name__ == '__main__':
     elif config.live_or_historical == 'historical':
         logger.info("Starting historical mode")
         #create instance of rest kraken api
-        api = Kraken_Rest_API(config.cryptos_id[0], config.last_n_days_rest_api)
+        api = Kraken_Rest_API(config.cryptos_id, config.last_n_days_rest_api)
     else:
         logger.error("Invalid mode")
         raise ValueError("Invalid mode")
