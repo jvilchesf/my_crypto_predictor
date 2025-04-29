@@ -20,7 +20,7 @@ fi
 
 # Change to the project root directory
 cd ..
-pwd 
+
 # Check that env is either "dev" or "prod"
 if [ "$env" = "dev" ]; then  
     echo "deploying image for dev"

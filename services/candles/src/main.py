@@ -1,6 +1,22 @@
 from quixstreams import Application
 from config import Settings
 from datetime import timedelta
+from typing import Any, Optional, List, Tuple
+
+from quixstreams.models import TimestampType
+
+
+def custom_ts_extractor(
+    value: Any,
+    headers: Optional[List[Tuple[str, bytes]]],
+    timestamp: float,
+    timestamp_type: TimestampType,
+) -> int:
+    """
+    Specifying a custom timestamp extractor to use the timestamp from the message
+    payload instead of Kafka timestamp.
+    """
+    return value['timestamp_ms']
 
 def init_candle(trade:dict):
     '''
@@ -37,17 +53,19 @@ def update_candle(candle:dict,
 
 def run(
     kafka_host: str,
-    timeframe_candle: int
+    timeframe_candle: int,
+    kafka_topic_input: str,
+    kafka_topic_output: str
 ):
     
     # Create an Application - the main configuration to connect to a kafka cluster
     app = Application(broker_address=kafka_host, consumer_group="candles-v1", auto_offset_reset='earliest')
 
     # Define a topic input and deserializer
-    topic_input = app.topic(name='trades', value_deserializer='json')
+    topic_input = app.topic(name=kafka_topic_input, value_deserializer='json', timestamp_extractor=custom_ts_extractor)
 
     # Define a topic output and deserializer
-    topic_output = app.topic(name='candles', value_deserializer='json')
+    topic_output = app.topic(name=kafka_topic_output, value_deserializer='json')
 
     # Create a stream channel to receive data in a pandas-like dataframe
     sdf = app.dataframe(topic_input)
@@ -99,7 +117,7 @@ def run(
     sdf = sdf.to_topic(topic_output)
 
     # Start the stream processing
-    app.run(sdf)
+    app.run()
 
 if __name__ == '__main__':
 
@@ -107,5 +125,7 @@ if __name__ == '__main__':
     config = Settings()
 
     run(config.KAFKA_HOST,
-        config.TIMEFRAME_CANDLE
+        config.TIMEFRAME_CANDLE,
+        config.KAFKA_TOPIC_INPUT,
+        config.KAFKA_TOPIC_OUTPUT
         )

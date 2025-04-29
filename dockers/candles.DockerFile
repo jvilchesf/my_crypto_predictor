@@ -21,7 +21,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project --no-dev
 
 #Add the rest of the project code. The "." represents all files in the current directory and subdirectories. /app is the destination
-add . /app
+ADD . /app
 
 # Installing separately from its dependencies allows optimal layer caching
 RUN --mount=type=cache,target=/root/.cache/uv \

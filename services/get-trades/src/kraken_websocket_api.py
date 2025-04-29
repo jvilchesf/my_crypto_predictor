@@ -2,6 +2,7 @@ from websocket import create_connection
 from model import Trade
 import json
 import loguru
+from datetime import datetime
 
 class Kraken_WebSocket_API:
 
@@ -12,6 +13,9 @@ class Kraken_WebSocket_API:
         self,
         cryptos_id: list[str]
         ):
+
+        # Initialize flags to control process end
+        self.is_done = False
 
         #create connection with socket          
         try:          
@@ -57,12 +61,15 @@ class Kraken_WebSocket_API:
         trades_list = []
         #Save trades in a list
         for trade in trades_data:
-            new_trade = Trade(
+            dt = datetime.fromisoformat(trade['timestamp'].replace('Z', '+00:00'))
+            # Convert to timestamp (seconds since epoch)
+            timestamp_sec = dt.timestamp()            
+            new_trade = Trade.format_trade_object(
                 symbol= trade['symbol'],
                 price= trade['price'],
                 qty= trade['qty'],
-                timestamp= trade['timestamp']                
-                )
+                timestamp_sec= timestamp_sec
+            )
             trades_list.append(new_trade)    
         
         #Return list of trades

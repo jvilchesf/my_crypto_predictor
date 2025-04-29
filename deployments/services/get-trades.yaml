@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trades
+  labels:
+    app: trades
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trades
+  template:
+    metadata:
+      labels:
+        app: trades
+    spec:
+      containers:
+      - name: trades
+        image: get-trades-image
+        imagePullPolicy: Never # Use the local image
+        env:
+        - name: KAFKA_TOPIC_NAME
+          value: trades
+        - name: LIVE_OR_HISTORICAL
+          value: live
+        - name: KAFKA_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: config-map
+              key: KAFKA_HOST
+        - name: CRYPTOS_ID
+          valueFrom:
+            configMapKeyRef:
+              name: config-map
+              key: CRYPTOS_ID
+        - name: LAST_N_DAYS_REST_API
+          valueFrom:
+            configMapKeyRef:
+              name: config-map
+              key: LAST_N_DAYS_REST_API

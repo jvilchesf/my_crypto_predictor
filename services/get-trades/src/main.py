@@ -17,7 +17,7 @@ from model import Trade
 
 def run(
         kafka_host: str,
-        kafka_topic_name: str,
+        kafka_topic_output: str,
         api: Kraken_WebSocket_API | Kraken_Rest_API
     ):
 
@@ -25,7 +25,7 @@ def run(
     app = Application(broker_address= kafka_host, consumer_group="text-splitter-v1")
 
     # Define a topic with chat messages in JSON format
-    messages_topic = app.topic(name=kafka_topic_name, value_serializer="json")
+    messages_topic = app.topic(name=kafka_topic_output, value_serializer="json")
 
     #create instance trade object where data will be saved
     with app.get_producer() as producer:
@@ -45,7 +45,8 @@ def run(
         
 
 if __name__ == '__main__':
-    
+
+    logger.info(f"Starting get-trades service in {config.live_or_historical} mode")
     if config.live_or_historical == 'live':
         logger.info("Starting live mode")
         #create instance of webosocket kraken api
@@ -59,6 +60,6 @@ if __name__ == '__main__':
         raise ValueError("Invalid mode")
     
 
-    run(config.kafka_host, config.kafka_topic_name, api)
+    run(config.kafka_host, config.kafka_topic_output, api)
 
 

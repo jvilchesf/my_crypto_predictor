@@ -89,6 +89,6 @@ class Kraken_Rest_API:
 
         return trades_list
 
-    def is_done() -> bool:
+    def is_done(self) -> bool:
         #check if is done
         return False

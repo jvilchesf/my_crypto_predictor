@@ -18,17 +18,19 @@ from loguru import logger
 
 def run(
     kafka_host: str,
-    timeframe_candle: int
+    timeframe_candle: int,
+    kafka_topic_input: str,
+    kafka_topic_output: str
     ):
 
     #Create an application
     app = Application(broker_address= kafka_host, consumer_group="technical-indicators-v1", auto_offset_reset='earliest')
 
     #Create topic where the information is
-    topic_candles = app.topic(name = 'candles', value_deserializer="json")
+    topic_candles = app.topic(name = kafka_topic_input, value_deserializer="json")
 
     #Create topic where the information is
-    topic_output = app.topic(name = 'technical-indicators', value_deserializer='json')
+    topic_output = app.topic(name = kafka_topic_output, value_deserializer='json')
 
     #Create dataframe
     sdf = app.dataframe(topic = topic_candles) 
@@ -67,5 +69,7 @@ if __name__ == '__main__':
     config = Settings()
 
     run(config.KAFKA_HOST,
-        config.TIMEFRAME_CANDLE
+        config.TIMEFRAME_CANDLE,
+        config.KAFKA_TOPIC_INPUT,
+        config.KAFKA_TOPIC_OUTPUT
         )
