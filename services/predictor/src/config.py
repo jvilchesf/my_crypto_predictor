@@ -16,5 +16,8 @@ class Settings(BaseSettings):
     N_ROWS_FOR_DATA_PROFILING: Optional[int] = None
 
     MLFLOW_TRACKING_URI: str
+    TRAIN_TEST_SPLIT_RATIO: float
 
+    LIST_FEATURES: list[str]
+    
 settings = Settings()

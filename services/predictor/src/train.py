@@ -9,6 +9,10 @@ from names import get_experiment_name
 import mlflow
 from mlflow.data.pandas_dataset import PandasDataset
 
+from models import BaselineModel, fit_lazy_regresor_n_models
+
+from sklearn.metrics import mean_absolute_error
+
 
 def generate_exploratory_data_analysis(
     ts_data: pd.DataFrame,
@@ -106,7 +110,9 @@ def train(
     candle_seconds: int,
     prediction_horizon_seconds: int,
     n_rows_for_data_profiling: int,
-    mlflow_tracking_uri: str
+    mlflow_tracking_uri: str,
+    train_test_split_ratio: float, 
+    list_features: list[str]
     ):
 
     """
@@ -129,7 +135,7 @@ def train(
     # - Model performance
     # - Model artifacts (hotml)
 
-    with mlflow.start_run():
+    with mlflow.start_run(nested = True):
 
         logger.info(f"Start loggin data to MLflow")
 
@@ -141,6 +147,14 @@ def train(
         # 2. Add target column
         logger.info(f"Adding target column")
         ts_data['target'] = ts_data['close'].shift(-prediction_horizon_seconds//candle_seconds)
+
+        #Filter just necessary features
+        ts_data = ts_data[list_features]
+
+        #Drop rows with null values
+
+        ts_data = ts_data.dropna()
+        logger.info(f"Dropped rows with null values")
 
         # Log data to MLflow
         # Wrap dataframe as dataset
@@ -162,10 +176,57 @@ def train(
         mlflow.log_artifact(local_path= "./prediction_crypto_eda.html", artifact_path="eda_report")
 
         # 5. Split it into train and test
+        logger.info(f"Splitting data into train and test with ratio {train_test_split_ratio}")
+        
+        train_size = int(len(ts_data) * train_test_split_ratio)
+
+        train_data = ts_data.iloc[:train_size]
+        test_data = ts_data.iloc[train_size:]
+        #Log parameters into mlflow
+        mlflow.log_param("train_size", train_data.shape)
+        mlflow.log_param("test_size", test_data.shape)
+
+        #Split data into features and target
+        X_train = train_data.drop(columns=['target'])
+        y_train = train_data['target']
+        X_test = test_data.drop(columns=['target'])
+        y_test = test_data['target']
+
+        #log parameters into mlflow
+        mlflow.log_param("X_train_shape", X_train.shape)
+        mlflow.log_param("Y_train_shape", y_train.shape)
+        mlflow.log_param("X_test_shape", X_test.shape)
+        mlflow.log_param("Y_test_shape", y_test.shape)
+
         # 6. Baseline model
-        # 7. XGBoost model with default hyperparameters
-        # 8. Validate final model
-        # 9. Push model
+        logger.info("Building a dummy baseline model")
+        baseline_model = BaselineModel()
+        y_pred_baseline_model = baseline_model.predict(X_test)
+
+        # 7. Log baseline performance
+        # Define an error metric MEA (mean absolute error)
+        mae_baseline_model = mean_absolute_error(y_test, y_pred_baseline_model)
+        mlflow.log_metric("mae_baseline_model", mae_baseline_model)
+        logger.info(f"MAE of the baseline model is {mae_baseline_model}")
+
+        # 7. Train a set of models and see which one perform the best
+        # Use lazy predict to evaluate the dataset with a list of models
+        df_lazy_predictor = fit_lazy_regresor_n_models(X_train, X_test, y_train, y_test)
+
+        #Reset index to save all columns in mlflow .json
+        df_lazy_predictor = df_lazy_predictor.reset_index()
+
+        #Log lazy predictor table in mlflow
+        logger.info(f"Saving lazy predictor models performance into mlflow")
+        mlflow.log_table(df_lazy_predictor, artifact_file='models_evaluation_lazy_predictor.json')
+
+        print(df_lazy_predictor)
+
+        # 8. XGBoost model with default hyperparameters
+
+        # 9. Log XGBoost performance
+        # 10. Validate final model
+        # 11. Push model if it is good enough
         
 
 if __name__ == "__main__":
@@ -182,5 +243,7 @@ if __name__ == "__main__":
         settings.CANDLE_SECONDS,
         settings.PREDICTION_HORIZON_SECONDS,
         settings.N_ROWS_FOR_DATA_PROFILING,
-        settings.MLFLOW_TRACKING_URI
+        settings.MLFLOW_TRACKING_URI,
+        settings.TRAIN_TEST_SPLIT_RATIO,
+        settings.LIST_FEATURES
     )
