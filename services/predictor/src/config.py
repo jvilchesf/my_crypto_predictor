@@ -1,0 +1,20 @@
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Optional
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file="../settings.env")
+
+    RISINGWAVE_HOST: str 
+    RISINGWAVE_PORT: int 
+    RISINGWAVE_USER: str
+    RISINGWAVE_DATABASE: str 
+
+    SYMBOL: str
+    DAYS_IN_PAST: int
+    CANDLE_SECONDS: int
+    PREDICTION_HORIZON_SECONDS: int
+    N_ROWS_FOR_DATA_PROFILING: Optional[int] = None
+
+    MLFLOW_TRACKING_URI: str
+
+settings = Settings()
