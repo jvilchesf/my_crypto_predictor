@@ -222,9 +222,6 @@ def train(
 
         print(df_lazy_predictor)
 
-        # 8. XGBoost model with default hyperparameters
-
-        # 9. Log XGBoost performance
         # 10. Validate final model
         # 11. Push model if it is good enough
         
