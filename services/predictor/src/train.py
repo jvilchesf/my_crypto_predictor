@@ -9,7 +9,7 @@ from names import get_experiment_name
 import mlflow
 from mlflow.data.pandas_dataset import PandasDataset
 
-from models import BaselineModel, fit_lazy_regresor_n_models
+from models import BaselineModel, fit_lazy_regresor_n_models, HuberRegressorWraperWithHyperparameterTuning, get_model
 
 from sklearn.metrics import mean_absolute_error
 
@@ -112,7 +112,9 @@ def train(
     n_rows_for_data_profiling: int,
     mlflow_tracking_uri: str,
     train_test_split_ratio: float, 
-    list_features: list[str]
+    list_features: list[str],
+    hyperparam_search_trials: int,
+    hyperparam_splits: int
     ):
 
     """
@@ -209,23 +211,33 @@ def train(
         mlflow.log_metric("mae_baseline_model", mae_baseline_model)
         logger.info(f"MAE of the baseline model is {mae_baseline_model}")
 
-        # 7. Train a set of models and see which one perform the best
+        # 8. Train a set of models and see which one perform the best
         # Use lazy predict to evaluate the dataset with a list of models
         df_lazy_predictor = fit_lazy_regresor_n_models(X_train, X_test, y_train, y_test)
 
-        #Reset index to save all columns in mlflow .json
+        # Reset index to save all columns in mlflow .json
         df_lazy_predictor = df_lazy_predictor.reset_index()
 
-        #Log lazy predictor table in mlflow
+        # Log lazy predictor table in mlflow
         logger.info(f"Saving lazy predictor models performance into mlflow")
         mlflow.log_table(df_lazy_predictor, artifact_file='models_evaluation_lazy_predictor.json')
 
-        print(df_lazy_predictor)
+        logger.info(f"lazy predictor table result = {df_lazy_predictor=}")
+
+        # Get model based on df_lazy_predictos with candidates from best to worst
+        model = get_model(df_lazy_predictor)
+
+        # 9. train model
+        huber_regressor = model(hyperparam_search_trials, hyperparam_splits)
+        huber_regressor = huber_regressor.fit(X_train, y_train)
 
         # 10. Validate final model
+        y_predict = huber_regressor.predict(X_test)
+        mae = mean_absolute_error(y_test, y_predict)
+        logger.info(f"MAE (mean absolute error) test dataset= {mae}")
+
         # 11. Push model if it is good enough
         
-
 if __name__ == "__main__":
 
     settings = Settings()
@@ -242,5 +254,7 @@ if __name__ == "__main__":
         settings.N_ROWS_FOR_DATA_PROFILING,
         settings.MLFLOW_TRACKING_URI,
         settings.TRAIN_TEST_SPLIT_RATIO,
-        settings.LIST_FEATURES
+        settings.LIST_FEATURES,
+        settings.HYPERPARAM_SEARCH_TRIALS,
+        settings.HYPERPARAM_SPLITS
     )

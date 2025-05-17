@@ -19,5 +19,8 @@ class Settings(BaseSettings):
     TRAIN_TEST_SPLIT_RATIO: float
 
     LIST_FEATURES: list[str]
+
+    HYPERPARAM_SEARCH_TRIALS: int
+    HYPERPARAM_SPLITS: int
     
 settings = Settings()
