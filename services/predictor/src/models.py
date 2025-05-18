@@ -5,6 +5,8 @@ from loguru import logger
 from typing import Optional
 import optuna
 
+import mlflow
+
 from sklearn.metrics import mean_absolute_error
 from sklearn.linear_model import HuberRegressor
 from sklearn.preprocessing import StandardScaler
@@ -178,7 +180,6 @@ class HuberRegressorWraperWithHyperparameterTuning:
         study.optimize(objective, n_trials=self.hyperparam_search_trials, timeout=600)
         return study.best_trial.params
 
-
 def fit_lazy_regresor_n_models(
         X_train: pd.DataFrame,
         X_test: pd.DataFrame,
@@ -209,24 +210,67 @@ def fit_lazy_regresor_n_models(
 
     return models
 
-def get_model(
-        df_lazy_predictor: pd.DataFrame
+def get_model_names(
+        X_train: pd.DataFrame,
+        y_train: pd.DataFrame,
+        X_test: pd.DataFrame,
+        y_test: pd.DataFrame,
+        top_n_models: int
+    ) -> list[str]:
+
+    """"
+    This function will return a list with top N models
+
+    Args:
+        X_train: Pandas Dataframe object with all training data used to run lazy model function
+        y_train: Pandas Dataframe object with all target train data
+        X_test: Pandas Dataframe object with all testing data used to run lazy model function
+        y_test: Pandas Dataframe object with all target train data
+        top_n_models: Parameter defined in settings.env will determine how many models will be compared
+    """
+
+    # Train a set of models and see which one perform the best
+    # Use lazy predict to evaluate the dataset with a list of models
+    df_lazy_predictor = fit_lazy_regresor_n_models(X_train, y_train, X_test, y_test)
+
+    # Reset index to save all columns in mlflow .json
+    df_lazy_predictor = df_lazy_predictor.reset_index()
+
+    # Log lazy predictor table in mlflow
+    logger.info(f"Saving lazy predictor models performance into mlflow")
+    mlflow.log_table(df_lazy_predictor, artifact_file='models_evaluation_lazy_predictor.json')
+    logger.info(f"lazy predictor table result = {df_lazy_predictor=}")
+
+    return df_lazy_predictor[:top_n_models]    
+
+def get_model_object(
+        model_name: list[str] | str
     ) -> HuberRegressorWraperWithHyperparameterTuning | str: 
 
     """"
-    Receive all model candidates output from lazypredictor in descending order, from best to worst
+    It has two options as input, if it receive a list with top n models, the function evlauate and compare them
+    If it receives a str value with the model name already defined, it directly returns the model object
 
     Args:
-        df_lazy_predictor: Dataframe with all candidates
+        model_name: List with top n models | string with model name already set.
     """
-    for index, row in df_lazy_predictor.iterrows():
-        if row['Model'] == 'HuberRegressor':
-            logger.info(f"Model selected to be trained: {row['Model']}")
-            return HuberRegressorWraperWithHyperparameterTuning
-        else:
-            logger.info(f"Hey we've not implemented {row['Model']}. we will go for the next option")
-            logger.info(f"Position= {index+1}, Name= {row['Model']}, MAE= {row['mean_absolute_error']}")
-            continue
+    
+    # If model_name is a lsit of n top model, go through the list and calculate mae for each of the three top models
+    # Hyperparameter tunning will be nedded to compare 
+    mae_list = {}
+    if isinstance(model_name, list):
+        for model in model_name:
+            # Save MAE for each model and its model name
+            logger.info(f"First model evaluate is {model}")
+            return "Creating more models ... In Progress"
+        #Compare mae of each model
+        # Return best model
+    elif model_name == "HuberRegressor":
+        logger.info(f"Model selected: HuberRegressor")
+        return HuberRegressorWraperWithHyperparameterTuning
+    else:
+        # TO DO: Implement more models
+        logger.info(f"No model was selected")
     
     # If we get here, we didn't find HuberRegressor
     logger.warning("HuberRegressor not found in the models list. Using LinearRegression as fallback.")

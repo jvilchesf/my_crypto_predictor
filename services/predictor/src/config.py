@@ -22,5 +22,8 @@ class Settings(BaseSettings):
 
     HYPERPARAM_SEARCH_TRIALS: int
     HYPERPARAM_SPLITS: int
+
+    MODEL_NAME: Optional[str]
+    TOP_N_MODELS: Optional[int]
     
 settings = Settings()

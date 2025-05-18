@@ -5,11 +5,12 @@ import pandas as pd
 from loguru import logger
 from config import Settings
 from names import get_experiment_name
+from typing import Optional
 
 import mlflow
 from mlflow.data.pandas_dataset import PandasDataset
 
-from models import BaselineModel, fit_lazy_regresor_n_models, HuberRegressorWraperWithHyperparameterTuning, get_model
+from models import BaselineModel, get_model_names,get_model_object
 
 from sklearn.metrics import mean_absolute_error
 
@@ -114,7 +115,9 @@ def train(
     train_test_split_ratio: float, 
     list_features: list[str],
     hyperparam_search_trials: int,
-    hyperparam_splits: int
+    hyperparam_splits: int,
+    model_name: Optional[str],
+    top_n_models: Optional[int],
     ):
 
     """
@@ -211,21 +214,15 @@ def train(
         mlflow.log_metric("mae_baseline_model", mae_baseline_model)
         logger.info(f"MAE of the baseline model is {mae_baseline_model}")
 
-        # 8. Train a set of models and see which one perform the best
-        # Use lazy predict to evaluate the dataset with a list of models
-        df_lazy_predictor = fit_lazy_regresor_n_models(X_train, X_test, y_train, y_test)
 
-        # Reset index to save all columns in mlflow .json
-        df_lazy_predictor = df_lazy_predictor.reset_index()
-
-        # Log lazy predictor table in mlflow
-        logger.info(f"Saving lazy predictor models performance into mlflow")
-        mlflow.log_table(df_lazy_predictor, artifact_file='models_evaluation_lazy_predictor.json')
-
-        logger.info(f"lazy predictor table result = {df_lazy_predictor=}")
+        # 8. Get best model using lazing predictor, a function will be run to receive a list with top 3 best models
+        # The best model will be selected, just the name, and a model object will be created based on it
+        if model_name is None:
+            model_names = get_model_names(X_train, X_test, y_train, y_test, top_n_models)
+            model_name = model_names
 
         # Get model based on df_lazy_predictos with candidates from best to worst
-        model = get_model(df_lazy_predictor)
+        model = get_model_object(model_name)
 
         # 9. train model
         huber_regressor = model(hyperparam_search_trials, hyperparam_splits)
@@ -256,5 +253,7 @@ if __name__ == "__main__":
         settings.TRAIN_TEST_SPLIT_RATIO,
         settings.LIST_FEATURES,
         settings.HYPERPARAM_SEARCH_TRIALS,
-        settings.HYPERPARAM_SPLITS
+        settings.HYPERPARAM_SPLITS,
+        settings.MODEL_NAME,
+        settings.TOP_N_MODELS
     )
