@@ -10,10 +10,10 @@ data:
   TIMEFRAME_CANDLE: '60'
   MAX_CANDLE_STATE: '70'
   LIST_SMA_PERIODS: '[7, 14, 21, 60]'
-  KAFKA_TOPIC_INPUT: trades_historical
-  KAFKA_TOPIC_OUTPUT: candles_historical
-  KAFKA_TOPIC_TECHNICAL_INDICATORS: technical_indicators
-  RISINGWAVE_TABLE_NAME: technical-indicators
+  KAFKA_TOPIC_TRADES: trades-historical
+  KAFKA_TOPIC_CANDLES: candles-historical
+  KAFKA_TOPIC_TECHNICAL_INDICATORS: technical-indicators
+  RISINGWAVE_TABLE_NAME: technical_indicators
 
 
 ---
@@ -47,7 +47,7 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: config-map
-              key: KAFKA_TOPIC_OUTPUT
+              key: KAFKA_TOPIC_TRADES
         - name: CRYPTOS_ID
           valueFrom:
             configMapKeyRef:
@@ -88,12 +88,12 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: config-map
-              key: KAFKA_TOPIC_INPUT
+              key: KAFKA_TOPIC_TRADES
         - name: KAFKA_TOPIC_OUTPUT
           valueFrom:
             configMapKeyRef:
               name: config-map
-              key: KAFKA_TOPIC_OUTPUT
+              key: KAFKA_TOPIC_CANDLES
         - name: TIMEFRAME_CANDLE
           valueFrom:
             configMapKeyRef:
@@ -129,6 +129,7 @@ spec:
       labels:
         app: technical-indicators
     spec:
+      restartPolicy: Never
       containers:
       - name: technical-indicators
         image: technical-indicators-image
@@ -143,12 +144,12 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: config-map
-              key: KAFKA_TOPIC_INPUT
+              key: KAFKA_TOPIC_CANDLES
         - name: KAFKA_TOPIC_OUTPUT
           valueFrom:
             configMapKeyRef:
               name: config-map
-              key: KAFKA_TOPIC_OUTPUT
+              key: KAFKA_TOPIC_TECHNICAL_INDICATORS
         - name: TIMEFRAME_CANDLE
           valueFrom:
             configMapKeyRef:

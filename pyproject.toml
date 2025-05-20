@@ -5,14 +5,19 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "great-expectations>=0.18.22",
     "loguru>=0.7.3",
+    "predictor",
     "pydantic>=2.10.6",
     "pydantic-settings>=2.8.1",
     "quixstreams>=3.13.1",
     "requests>=2.32.3",
-    "ta-lib>=0.6.3",
+    "risingwave-py>=0.0.1",
     "websocket-client>=1.8.0",
 ]
 
 [tool.uv.workspace]
-members = ["services/candles", "services/technical_indicators"]
+members = ["services/candles", "services/technical_indicators", "services/predictor"]
+
+[tool.uv.sources]
+predictor = { workspace = true }

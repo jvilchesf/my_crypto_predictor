@@ -1,0 +1,96 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: train-pipeline
+spec:
+  schedule: "0 */1 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: train-pipeline
+            image: train-pipeline
+          restartPolicy: OnFailure
+          env:
+          - name: RISINGWAVE_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: config-map-train-pipeline
+                key: RISINGWAVE_HOST
+          - name: RISINGWAVE_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: config-map-train-pipeline
+                key: RISINGWAVE_PORT
+          - name: RISINGWAVE_USER
+            valueFrom:
+              configMapKeyRef:
+                name: config-map-train-pipeline
+                key: RISINGWAVE_USER
+          - name: RISINGWAVE_DATABASE
+            valueFrom:
+              configMapKeyRef:
+                name: config-map-train-pipeline
+                key: RISINGWAVE_DATABASE
+          - name: SYMBOL
+            valueFrom:
+              configMapKeyRef:
+                name: config-map-train-pipeline
+                key: SYMBOL
+          - name: DAYS_IN_PAST
+            valueFrom:
+              configMapKeyRef:
+                name: config-map-train-pipeline
+                key: DAYS_IN_PAST
+          - name: CANDLE_SECONDS
+            valueFrom:
+              configMapKeyRef:
+                name: config-map-train-pipeline 
+                key: CANDLE_SECONDS
+          - name: PREDICTION_HORIZON_SECONDS
+            valueFrom:
+              configMapKeyRef:
+                name: config-map-train-pipeline
+                key: PREDICTION_HORIZON_SECONDS 
+          - name: N_ROWS_FOR_DATA_PROFILING
+            valueFrom:
+              configMapKeyRef:
+                name: config-map-train-pipeline
+                key: N_ROWS_FOR_DATA_PROFILING
+          - name: MLFLOW_TRACKING_URI
+            valueFrom:
+              configMapKeyRef:
+                name: config-map-train-pipeline
+                key: MLFLOW_TRACKING_URI
+          - name: TRAIN_TEST_SPLIT_RATIO
+            valueFrom:    
+              configMapKeyRef:
+                name: config-map-train-pipeline
+                key: TRAIN_TEST_SPLIT_RATIO
+          - name: HYPERPARAM_SEARCH_TRIALS
+            valueFrom:
+              configMapKeyRef:  
+                name: config-map-train-pipeline
+                key: HYPERPARAM_SEARCH_TRIALS
+          - name: HYPERPARAM_SPLITS
+            valueFrom:
+              configMapKeyRef:  
+                name: config-map-train-pipeline 
+                key: HYPERPARAM_SPLITS
+          - name: TOP_N_MODELS
+            valueFrom:
+              configMapKeyRef:  
+                name: config-map-train-pipeline 
+                key: TOP_N_MODELS 
+          - name: TRESHOLD_NULL_VALUES
+            valueFrom:
+              configMapKeyRef:  
+                name: config-map-train-pipeline 
+                key: TRESHOLD_NULL_VALUES
+          - name: TRESHOLD_SELECT_MODEL
+            valueFrom:
+              configMapKeyRef:  
+                name: config-map-train-pipeline 
+                key: TRESHOLD_SELECT_MODEL
+              

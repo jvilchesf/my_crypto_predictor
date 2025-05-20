@@ -22,7 +22,7 @@ spec:
         - name: KAFKA_TOPIC_NAME
           value: trades
         - name: LIVE_OR_HISTORICAL
-          value: live
+          value: historical
         - name: KAFKA_HOST
           valueFrom:
             configMapKeyRef:
