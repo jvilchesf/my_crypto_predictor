@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import os
 from lazypredict.Supervised import LazyRegressor
 from loguru import logger
@@ -8,9 +9,13 @@ import optuna
 import mlflow
 
 from sklearn.metrics import mean_absolute_error
-from sklearn.linear_model import HuberRegressor
-from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import HuberRegressor, LinearRegression
+from sklearn import linear_model
+
+from sklearn.compose import TransformedTargetRegressor
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.pipeline import Pipeline
+
 
 
 class BaselineModel:
@@ -33,7 +38,9 @@ class BaselineModel:
         """
         return X['close']
 
-class HuberRegressorWraperWithHyperparameterTuning:
+
+
+class ModelWithHyperparameterTuning:
 
     """"
     Fit the model with Hyperparameters tunnings
@@ -41,6 +48,7 @@ class HuberRegressorWraperWithHyperparameterTuning:
 
     def __init__(
             self,
+            model_name: str,
             hyperparam_search_trials: Optional[int] = 0,
             hyperparam_splits: Optional[int] = 3
         ):
@@ -48,10 +56,12 @@ class HuberRegressorWraperWithHyperparameterTuning:
         Initialize the model
 
         Args:
+            model_name: Receive the name of the model that needs to be created
             hyperparam_search_trials: Optional integer paramenter defined in settings.env define how many iterations will be execute by optuna to find best hyperparameters
             hyperparam_splits: Optional integer paramenter defined in settings.env that tells how many times the train dataset will be splitted in train and validation datasets
         """
 
+        self.model_name = model_name
         self.pipeline = self._get_pipeline()
 
         self.hyperparam_search_trials = hyperparam_search_trials
@@ -67,8 +77,8 @@ class HuberRegressorWraperWithHyperparameterTuning:
 
     def fit( 
             self,
-            X,
-            y
+            X: pd.DataFrame,
+            y: pd.Series
         ):
         """"
         Fit function of the model, it will look for hyperparameters depending on the parametric _do_hyperparam_tuning variable.
@@ -87,32 +97,50 @@ class HuberRegressorWraperWithHyperparameterTuning:
             model_hyperparams = self._find_best_hyperparams(X, y)
             logger.info(f"Hyperparameter tunning with optuna is ready!, best trial: {model_hyperparams}")
             self.pipeline = self._get_pipeline(model_hyperparams)
-            logger.info(f"Start fitting the selected model with the best hyperparameters")
+            logger.info(f"Start fitting the {self.model_name} model with the best hyperparameters")
             return self.pipeline.fit(X, y)
         
     def _get_pipeline(
             self,
-            model_hyperparams: Optional[dict] = None
+            model_hyperparams: Optional[dict] = None,
         ) -> Pipeline:
         
         """"
-        Standar function to return pipeline definition depending if hyperparam_search_trials is defined or not
+        Function to return dinamically pipelines depending on the model called and the hyperparameters
+
+        Args:
+            model_hyperparams: Optional dictionary with the model hyperparameters
         """
 
-        if model_hyperparams is None:
-            return Pipeline(
-                    steps = [
-                        ('scaler', StandardScaler()),
-                        ('model', HuberRegressor())
-                ]
-            )
-        else: 
-            return Pipeline(
-                    steps = [
-                        ('scaler', StandardScaler()),
-                        ('model', HuberRegressor(**model_hyperparams))
-                    ])
+        #Create different pipelines depending on the model called
 
+        if model_hyperparams is None:
+            if self.model_name == "HuberRegressor":
+                model = HuberRegressor()
+            elif self.model_name == "TransformedTargetRegressor":
+                model = TransformedTargetRegressor(regressor=LinearRegression(),func=np.log, inverse_func=np.exp)
+            elif self.model_name == "LinearRegression":
+                model = LinearRegression()
+            elif self.model_name == "LassoLarsIC":
+                model = linear_model.LassoLarsIC()
+        else:
+            if self.model_name == "HuberRegressor":
+                model = HuberRegressor(**model_hyperparams)
+            elif self.model_name == "TransformedTargetRegressor":
+                model = TransformedTargetRegressor(**model_hyperparams)
+            elif self.model_name == "LinearRegression":
+                model = LinearRegression(**model_hyperparams)
+            elif self.model_name == "LassoLarsIC":
+                model = linear_model.LassoLarsIC(**model_hyperparams)
+
+
+        return Pipeline(
+                steps = [
+                    ('scaler', StandardScaler()),
+                    ('model', model)
+            ]
+        )
+      
     def _find_best_hyperparams(
             self,
             X_train: pd.DataFrame,
@@ -132,15 +160,8 @@ class HuberRegressorWraperWithHyperparameterTuning:
             # We ask Optuna to same the next set of hyperparameters for huber regressor
             # these are our candidates for this trial
 
-            params = {
-                'epsilon' : trial.suggest_uniform('epsilon', 1.00, 99999999),  # More focused range
-                'alpha' : trial.suggest_uniform('alpha', 0.01, 1.0),  # Smaller alpha range
-                'max_iter' : trial.suggest_int('max_iter', 100, 1000),    # Reduced max iterations
-                'tol' : trial.suggest_uniform('tol', 1e-4, 1e-2),        # More precise tolerance
-                'warm_start' : trial.suggest_categorical('warm_start', [True, False]),
-                'fit_intercept' : trial.suggest_categorical('fit_intercept', [True, False]),
-            }
-
+            params = get_model_params_dict(self.model_name, trial)
+ 
             # Split the dataset into n_splits folds 
             from sklearn.model_selection import TimeSeriesSplit
             tscv = TimeSeriesSplit(n_splits=self.hyperparam_splits)
@@ -176,7 +197,8 @@ class HuberRegressorWraperWithHyperparameterTuning:
             return np.mean(mae_score)
 
         # Create an optuna study, it is a concept of the optuna library. Each study has several trial iterations to find the best hyperparameters
-        study = optuna.create_study()
+        study_name = f"{self.model_name}_study"
+        study = optuna.create_study(study_name=study_name)
         study.optimize(objective, n_trials=self.hyperparam_search_trials, timeout=600)
         return study.best_trial.params
 
@@ -243,13 +265,58 @@ def get_model_names(
 
     return df_lazy_predictor[:top_n_models]    
 
-def get_model_object(
-        model_name: list[str] | str
-    ) -> HuberRegressorWraperWithHyperparameterTuning | str: 
+def model_execution(
+        X_train: pd.DataFrame,
+        y_train: pd.DataFrame, 
+        X_test_compare: pd.DataFrame,
+        y_test_compare: pd.DataFrame, 
+        model_name: str,
+        hyperparam_search_trials: int,
+        hyperparam_splits: int
+    ) -> int:
+
+        """"
+        This function will create and fit the model
+
+        Args:
+            model_name: Contains an string value with the model name needs to be ran.
+            hyperparam_search_trials: Variable defined how many trails will be executed by optuna.
+            hyperparam_splits: It defines how many times the data will be splited on each 
+
+        Return:
+            It will return the MAE (mean absolute error)    
+        """
+        # Create a custom model
+        model = ModelWithHyperparameterTuning(model_name, hyperparam_search_trials, hyperparam_splits)
+        logger.info(f"Comparing models: Model {model_name} created")
+        #Fit model
+        logger.info(f"Comparing models: Model {model_name} Fitting in progress")
+        model = model.fit(X_train, y_train)
+        logger.info(f"Comparing models: Model {model_name} Fitting Ready")
+        #evaluate model with test data
+        y_predict = model.predict(X_test_compare)
+        logger.info(f"Comparing models: Model {model_name} Predicting in progress")
+        # calculate mae
+        mae = mean_absolute_error(y_test_compare, y_predict)
+        logger.info(f"Comparing models: Model {model_name} MAE: {mae}")
+        return mae
+
+
+def compare_models(
+        X_train: pd.DataFrame,
+        y_train: pd.DataFrame, 
+        X_test_compare: pd.DataFrame, 
+        y_test_compare: pd.DataFrame, 
+        models_name: pd.Series | str,
+        hyperparam_search_trials: int,
+        hyperparam_splits: int
+    ) -> ModelWithHyperparameterTuning | str: 
 
     """"
-    It has two options as input, if it receive a list with top n models, the function evlauate and compare them
-    If it receives a str value with the model name already defined, it directly returns the model object
+    This function receive a list of models to compare, it will run one by one and save their mae to finally compare and 
+    select the model with best performance.
+
+    Model can receive a list of models or a predefined model
 
     Args:
         model_name: List with top n models | string with model name already set.
@@ -258,20 +325,97 @@ def get_model_object(
     # If model_name is a lsit of n top model, go through the list and calculate mae for each of the three top models
     # Hyperparameter tunning will be nedded to compare 
     mae_list = {}
-    if isinstance(model_name, list):
-        for model in model_name:
-            # Save MAE for each model and its model name
-            logger.info(f"First model evaluate is {model}")
-            return "Creating more models ... In Progress"
-        #Compare mae of each model
-        # Return best model
-    elif model_name == "HuberRegressor":
-        logger.info(f"Model selected: HuberRegressor")
-        return HuberRegressorWraperWithHyperparameterTuning
-    else:
-        # TO DO: Implement more models
-        logger.info(f"No model was selected")
+    count = 0
+
+    if isinstance(models_name, pd.Series):
+        for model_name in models_name:
+            # Check if model is in the list of models we have for training
+            if model_name in ["HuberRegressor", "TransformedTargetRegressor", "LinearRegression", "LassoLarsIC"]:
+                # Save model name in mlflow
+                mlflow.log_param(f"compared_model_name_{count+1}", model_name)
+                
+                # Select model
+                mae = model_execution(X_train, y_train, X_test_compare, y_test_compare, model_name, hyperparam_search_trials, hyperparam_splits)
+                
+                # Save model name and mae in a dictionary
+                mae_list[model_name] = mae
+                count += 1
+            else:
+                logger.info(f"Compare models: Model {model_name} not found in the models list")
+                continue
+        # Get the model name with the lowest mae
+        best_model = min(mae_list, key=mae_list.get)
+
+        # Save best model name in mlflow
+        mlflow.log_param(f"best_model_name", best_model)
+        # Save best model mae in mlflow
+        mlflow.log_param(f"best_model_mae", mae_list[best_model])
+        # Save all models mae in mlflow
+        mlflow.log_param(f"all_models_mae", mae_list)
+        
+        logger.info(f"Compare models: Best model is {best_model}")
+        # Return an instance of the best model
+        return ModelWithHyperparameterTuning(best_model, hyperparam_search_trials, hyperparam_splits)
     
-    # If we get here, we didn't find HuberRegressor
-    logger.warning("HuberRegressor not found in the models list. Using LinearRegression as fallback.")
-    return "Error, no model was founded"  # Fallback to HuberRegressor anyway
+    elif models_name == "HuberRegressor":
+        logger.info(f"Compare models: Model selected preselected manually: HuberRegressor")
+        return ModelWithHyperparameterTuning(models_name, hyperparam_search_trials, hyperparam_splits)
+    else:
+        # If we get here, we didn't find HuberRegressor
+        logger.warning("Model not found in the models list. Using HuberRegressor as fallback.")
+        return ModelWithHyperparameterTuning("HuberRegressor", hyperparam_search_trials, hyperparam_splits)
+
+     
+def get_model_params_dict(
+        model_name: str,
+        trial: optuna.Trial,
+    ) -> dict:
+    
+    """"
+    This function will return a dictionary with the model parameters
+
+    Args: 
+        model_name: str with the model name
+        trial: optuna.Trial object
+    """
+
+    # Define main dictionary with all model parameters
+
+    if model_name == "TransformedTargetRegressor":            
+        return {
+            "regressor": LinearRegression(),  # Always use LinearRegression as the base regressor
+            "transformer": None,
+            "func": trial.suggest_categorical("func", [np.log, np.sqrt, np.arcsinh]),  # Use log transformation
+            "inverse_func": trial.suggest_categorical("inverse_func", [np.exp, np.sqrt, np.arcsinh]),  # Use exp as inverse
+            "check_inverse": trial.suggest_categorical("check_inverse", [True, False])
+        }
+        
+
+    if model_name == "LinearRegression": 
+        return {
+                "fit_intercept": trial.suggest_categorical("fit_intercept", [True, False]),
+                "positive": trial.suggest_categorical("positive", [True, False]),
+                "n_jobs": trial.suggest_categorical("n_jobs", [-1])
+            }
+
+    if model_name == "LassoLarsIC":
+        return {
+                "criterion": trial.suggest_categorical("criterion", ["aic", "bic"]),
+                "fit_intercept": trial.suggest_categorical("fit_intercept", [True, False]),
+                "verbose": trial.suggest_categorical("verbose", [False, True]),
+                "precompute": trial.suggest_categorical("precompute", ["auto", True, False]),
+                "max_iter": trial.suggest_int("max_iter", 500, 1000),
+                "eps": trial.suggest_uniform("eps", 1e-16, 1e-15),
+                "copy_X": trial.suggest_categorical("copy_X", [True, False]),
+                "positive": trial.suggest_categorical("positive", [False, True]),
+                "noise_variance": trial.suggest_categorical("noise_variance", [None])
+            }
+    if model_name == "HuberRegressor":
+        return {
+                'epsilon': trial.suggest_uniform('epsilon', 1.00, 99999999),  # More focused range
+                'alpha': trial.suggest_uniform('alpha', 0.01, 1.0),  # Smaller alpha range
+                'max_iter': trial.suggest_int('max_iter', 100, 1000),    # Reduced max iterations
+                'tol': trial.suggest_uniform('tol', 1e-4, 1e-2),        # More precise tolerance
+                'warm_start': trial.suggest_categorical('warm_start', [True, False]),
+                'fit_intercept': trial.suggest_categorical('fit_intercept', [True, False])
+            }

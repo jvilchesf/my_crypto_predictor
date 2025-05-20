@@ -23,7 +23,10 @@ class Settings(BaseSettings):
     HYPERPARAM_SEARCH_TRIALS: int
     HYPERPARAM_SPLITS: int
 
-    MODEL_NAME: Optional[str]
-    TOP_N_MODELS: Optional[int]
+    MODEL_NAME: Optional[str] = None
+    TOP_N_MODELS: Optional[int] = None
+
+    TRESHOLD_NULL_VALUES: float
+    TRESHOLD_SELECT_MODEL: float
     
 settings = Settings()

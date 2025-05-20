@@ -1,19 +1,18 @@
-from risingwave import RisingWave, RisingWaveConnOptions, OutputFormat
-from ydata_profiling import ProfileReport
-import great_expectations as gex
 import pandas as pd
 from loguru import logger
-from config import Settings
-from names import get_experiment_name
 from typing import Optional
 
+from risingwave import RisingWave, RisingWaveConnOptions, OutputFormat
+from ydata_profiling import ProfileReport
 import mlflow
 from mlflow.data.pandas_dataset import PandasDataset
 
-from models import BaselineModel, get_model_names,get_model_object
+from config import Settings
+from models import BaselineModel, get_model_names, compare_models
+from names import get_experiment_name
+from transform_clean_data import SplitData, TransformCleanData
 
 from sklearn.metrics import mean_absolute_error
-
 
 def generate_exploratory_data_analysis(
     ts_data: pd.DataFrame,
@@ -28,30 +27,6 @@ def generate_exploratory_data_analysis(
     """
     profile = ProfileReport(ts_data, tsmode=True, sortby="window_start_ms", title="Technical Indicators Prediction EDA")
     profile.to_file(output_file=output_file_path)
-
-def validate_data(
-    ts_data: pd.DataFrame
-    ):
-    """
-    Runs a bunch of validations, if any of them fail, the function will raise an exception
-    """
-
-    # Check if the numeric columns are positive
-    ge = gex.from_pandas(ts_data)
-
-    #validation_results = ge.expect_column_values_to_be_between(column='open', min_value=0, max_value=float('inf'))
-    #validation_results = ge.expect_column_values_to_be_between(column='high', min_value=0, max_value=float('inf'))
-    #validation_results = ge.expect_column_values_to_be_between(column='low', min_value=0, max_value=float('inf'))
-    validation_results = ge.expect_column_values_to_be_between(column='close', min_value=0, max_value=float('inf'))
-    #validation_results = ge.expect_column_values_to_be_between(column='volume', min_value=0, max_value=float('inf'))
-    
-    if not validation_results.success:
-        raise Exception("Data validation failed")
-    
-    # - Check for null values
-    # - Check for datetime corrected format
-    # - Check for duplicate rows
-    # - Check data is sorted by window_start_ms
     
 def load_data_from_risingwave(
     rw_host: str,
@@ -118,6 +93,8 @@ def train(
     hyperparam_splits: int,
     model_name: Optional[str],
     top_n_models: Optional[int],
+    treshold_null_values: float,
+    treshold_select_model: float
     ):
 
     """
@@ -130,8 +107,9 @@ def train(
     # - tracking uri
     mlflow.set_tracking_uri(uri=mlflow_tracking_uri)
 
+    experiment_name = get_experiment_name(symbol, days_in_past, candle_seconds)
     # Create a new MLflow Experiment
-    mlflow.set_experiment(get_experiment_name(symbol, days_in_past, candle_seconds))
+    mlflow.set_experiment(experiment_name)
 
     #Things we have to log with MLflow 
     # - EDA report
@@ -156,11 +134,6 @@ def train(
         #Filter just necessary features
         ts_data = ts_data[list_features]
 
-        #Drop rows with null values
-
-        ts_data = ts_data.dropna()
-        logger.info(f"Dropped rows with null values")
-
         # Log data to MLflow
         # Wrap dataframe as dataset
         dataset: PandasDataset = mlflow.data.from_pandas(ts_data)
@@ -170,8 +143,9 @@ def train(
         mlflow.log_param("ts_data_shape", ts_data.shape)
 
         # 3. Validate the data  with greate expectations
+        transform_clean_data = TransformCleanData(ts_data)
         logger.info("Validating data with GEX (great expectations) python library")
-        validate_data(ts_data)
+        ts_data = transform_clean_data.validate_data(treshold_null_values)
 
         # 4. Profile the data using ydata-profiling
         ts_data_for_profiling = ts_data.head(n_rows_for_data_profiling) if n_rows_for_data_profiling else ts_data
@@ -183,25 +157,9 @@ def train(
         # 5. Split it into train and test
         logger.info(f"Splitting data into train and test with ratio {train_test_split_ratio}")
         
-        train_size = int(len(ts_data) * train_test_split_ratio)
-
-        train_data = ts_data.iloc[:train_size]
-        test_data = ts_data.iloc[train_size:]
-        #Log parameters into mlflow
-        mlflow.log_param("train_size", train_data.shape)
-        mlflow.log_param("test_size", test_data.shape)
-
-        #Split data into features and target
-        X_train = train_data.drop(columns=['target'])
-        y_train = train_data['target']
-        X_test = test_data.drop(columns=['target'])
-        y_test = test_data['target']
-
-        #log parameters into mlflow
-        mlflow.log_param("X_train_shape", X_train.shape)
-        mlflow.log_param("Y_train_shape", y_train.shape)
-        mlflow.log_param("X_test_shape", X_test.shape)
-        mlflow.log_param("Y_test_shape", y_test.shape)
+        split_data = SplitData(ts_data)
+        X_train, y_train, X_test, y_test = split_data.split_train_test_datasets(train_test_split_ratio)
+        X_test_compare, y_test_compare, X_test, y_test = split_data.split_test_compare_datasets(X_test, y_test)
 
         # 6. Baseline model
         logger.info("Building a dummy baseline model")
@@ -214,27 +172,49 @@ def train(
         mlflow.log_metric("mae_baseline_model", mae_baseline_model)
         logger.info(f"MAE of the baseline model is {mae_baseline_model}")
 
-
-        # 8. Get best model using lazing predictor, a function will be run to receive a list with top 3 best models
+        # 8. Get best model using lazy predictor, a function will be run to receive a list with top 3 best models
         # The best model will be selected, just the name, and a model object will be created based on it
+        logger.info(f"Start Lazy predictor")
         if model_name is None:
             model_names = get_model_names(X_train, X_test, y_train, y_test, top_n_models)
-            model_name = model_names
+            # Taking just column Model from the dataframe
+            model_name = model_names['Model'] 
 
-        # Get model based on df_lazy_predictos with candidates from best to worst
-        model = get_model_object(model_name)
+        # This function will compare top n best models and return the best one.
+        # that's why is necessary to send trials and splits variables
+        logger.info(f"Start selecting model")
+        best_model = compare_models(X_train, y_train, X_test_compare, y_test_compare, model_name, hyperparam_search_trials, hyperparam_splits)
 
-        # 9. train model
-        huber_regressor = model(hyperparam_search_trials, hyperparam_splits)
-        huber_regressor = huber_regressor.fit(X_train, y_train)
+        # 9. fit model
+        best_model = best_model.fit(X_train, y_train)
 
-        # 10. Validate final model
-        y_predict = huber_regressor.predict(X_test)
+        # 10. Validate final model with testing data
+        y_predict = best_model.predict(X_test)
         mae = mean_absolute_error(y_test, y_predict)
         logger.info(f"MAE (mean absolute error) test dataset= {mae}")
+        mlflow.log_metric("mae selected model", mae)
+
 
         # 11. Push model if it is good enough
-        
+        # To know if the trained model is good enough to be load in the model registry it needs to be compared with the baseline model
+
+        # Check of the model is bettern than the best model
+        diff_mae = mae - mae_baseline_model
+        ratio_diff_mae = diff_mae / mae_baseline_model
+
+        # If ratio of diff represent less than threshold to select model then registry this new model
+        if ratio_diff_mae < treshold_select_model:
+            # Load model in the registry model mlflow
+            mlflow.sklearn.log_model(
+                sk_model=best_model,
+                artifact_path="sklearn-model",
+                input_example=X_train,
+                registered_model_name=f"sk-learn-mode-{experiment_name}",
+            )
+            logger.info(f"New model registered. Ratio difference with base model: {ratio_diff_mae}")
+        else:
+            logger.info(f"Model wasn't good enough to be published, it has to be at least 5% underneath MAE of base model")
+
 if __name__ == "__main__":
 
     settings = Settings()
@@ -255,5 +235,7 @@ if __name__ == "__main__":
         settings.HYPERPARAM_SEARCH_TRIALS,
         settings.HYPERPARAM_SPLITS,
         settings.MODEL_NAME,
-        settings.TOP_N_MODELS
+        settings.TOP_N_MODELS,
+        settings.TRESHOLD_NULL_VALUES,
+        settings.TRESHOLD_SELECT_MODEL
     )
