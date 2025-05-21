@@ -8,6 +8,14 @@ spec:
       containers:
       - name: training-pipeline
         image: training-pipeline-image
+        imagePullPolicy: Never # Use the local image
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "4"
+          limits:
+            memory: "16Gi"
+            cpu: "18"        
         env:
         - name: RISINGWAVE_HOST
           valueFrom:
@@ -89,5 +97,5 @@ spec:
             configMapKeyRef:  
               name: training-pipeline-config-map 
               key: TRESHOLD_SELECT_MODEL
-      restartPolicy: OnFailure
+      restartPolicy: Never
           

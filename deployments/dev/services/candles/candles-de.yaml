@@ -20,6 +20,12 @@ spec:
         imagePullPolicy: Never # Use the local image
         env:
         - name: KAFKA_HOST
-          value: kafka-e11b-kafka-bootstrap.kafka.svc.cluster.local:9092
+          valueFrom:
+            configMapKeyRef:
+              name: candles-config-map
+              key: KAFKA_HOST
         - name: KAFKA_TOPIC
-          value: "candles"
+          valueFrom:
+            configMapKeyRef:
+              name: candles-config-map
+              key: KAFKA_TOPIC

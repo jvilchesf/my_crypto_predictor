@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "great-expectations>=0.18.22",
+    "candles",
     "loguru>=0.7.3",
     "predictor",
     "pydantic>=2.10.6",
@@ -19,5 +19,14 @@ dependencies = [
 [tool.uv.workspace]
 members = ["services/candles", "services/technical_indicators", "services/predictor"]
 
+
 [tool.uv.sources]
+trades = { workspace = true }
+candles = { workspace = true }
+technical-indicators = { workspace = true }
 predictor = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "ruff>=0.11.10",
+]

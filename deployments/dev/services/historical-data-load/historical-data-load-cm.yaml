@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: historical-data-load-config-map
+data:
+  KAFKA_HOST: "kafka-e11b-kafka-bootstrap.kafka.svc.cluster.local:9092"
+  CRYPTOS_ID: '["BTC/USD","ETH/USD"]'
+  LIVE_OR_HISTORICAL: "historical"
+  LAST_N_DAYS_REST_API: "30"
+  TIMEFRAME_CANDLE: "60"
+  MAX_CANDLE_STATE: "70"
+  LIST_SMA_PERIODS: '[7, 14, 21, 60]'
+  KAFKA_TOPIC_TRADES: "trades-historical"
+  KAFKA_TOPIC_CANDLES: "candles-historical"
+  KAFKA_TOPIC_TECHNICAL_INDICATORS: "technical-indicators"
+  RISINGWAVE_TABLE_NAME: "technical_indicators"

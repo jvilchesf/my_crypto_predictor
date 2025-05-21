@@ -24,9 +24,7 @@ fi
 # Check that env is either "dev" or "prod"
 if [ "$env" = "dev" ]; then  
     echo "deploying image for dev"
-    kubectl delete -f deployments/services/${image_name}.yaml --ignore-not-found=true
-	kubectl apply -f deployments/services/${image_name}.yaml
-
+    kustomize build deployments/dev/services/${image_name} | kubectl apply -f -
 else
     echo "deploying image for ${image_name} for prod"
     BUILD_DATE=$(date +%s)

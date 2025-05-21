@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: technical-indicators-config-map
+data:
+  KAFKA_HOST: "kafka-e11b-kafka-bootstrap.kafka.svc.cluster.local:9092"
+  KAFKA_TOPIC: "technical-indicators"
+  TIMEFRAME_CANDLE: "60"
+  MAX_CANDLE_STATE: "1000"
+  LIST_SMA_PERIODS: "[7, 14, 21, 60]"

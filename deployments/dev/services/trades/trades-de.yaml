@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: trades
+  namespace: bitcoin-predictor
   labels:
     app: trades
 spec:
@@ -16,25 +17,37 @@ spec:
     spec:
       containers:
       - name: trades
-        image: get-trades-image
+        image: trades-image
         imagePullPolicy: Never # Use the local image
         env:
         - name: KAFKA_TOPIC_NAME
-          value: trades
+          valueFrom:
+            configMapKeyRef:
+              name: trades-config-map
+              key: KAFKA_TOPIC_NAME
         - name: LIVE_OR_HISTORICAL
-          value: historical
+          valueFrom:
+            configMapKeyRef:
+              name: trades-config-map
+              key: LIVE_OR_HISTORICAL
         - name: KAFKA_HOST
           valueFrom:
             configMapKeyRef:
-              name: config-map
+              name: trades-config-map
               key: KAFKA_HOST
         - name: CRYPTOS_ID
           valueFrom:
             configMapKeyRef:
-              name: config-map
+              name: trades-config-map
               key: CRYPTOS_ID
         - name: LAST_N_DAYS_REST_API
           valueFrom:
             configMapKeyRef:
-              name: config-map
+              name: trades-config-map
               key: LAST_N_DAYS_REST_API
+        - name: KAFKA_TOPIC_OUTPUT
+          valueFrom:
+            configMapKeyRef:
+              name: trades-config-map
+              key: KAFKA_TOPIC_OUTPUT
+              

@@ -33,11 +33,14 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
 
+ENV MLFLOW_TRACKING_USERNAME=user
+ENV MLFLOW_TRACKING_PASSWORD=6440921D-2493-42AA-BE40-428CD753D81D
+
 # Reset the entrypoint, don't invoke `uv`
 ENTRYPOINT []
 
-#CMD ["uv", "run", "/app/services/predictor/src/train.py"]
+CMD ["uv", "run", "/app/services/predictor/src/train.py"]
 
 # If you want to debug the file system, uncomment the line below
 # This will keep the container running and allow you to exec into it
-CMD ["/bin/bash", "-c", "sleep 999999"]
+# CMD ["/bin/bash", "-c", "sleep 999999"]

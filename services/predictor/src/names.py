@@ -1,8 +1,4 @@
-def get_experiment_name(
-        symbol: str,
-        days_in_past: int,
-        candle_seconds: int
-    ) -> str:
+def get_experiment_name(symbol: str, days_in_past: int, candle_seconds: int) -> str:
     """
     Generate a unique experiment name based on the symbol, days in the past, and candle seconds
     """

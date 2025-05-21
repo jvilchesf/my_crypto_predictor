@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trades-config-map
+data:
+  KAFKA_TOPIC_NAME: "trades"
+  KAFKA_TOPIC_OUTPUT: "trades-historical"
+  LIVE_OR_HISTORICAL: "live"
+  KAFKA_HOST: "kafka.kafka.svc.cluster.local:9092"
+  CRYPTOS_ID: '["BTC", "ETH"]'
+  LAST_N_DAYS_REST_API: "30"  

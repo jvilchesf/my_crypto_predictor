@@ -3,13 +3,13 @@ kind: ConfigMap
 metadata:
   name: training-pipeline-config-map
 data:
-  MLFLOW_TRACKING_URI: "mlflow-tracking.mlflow.svc.cluster.local:80"
+  MLFLOW_TRACKING_URI: "http://mlflow-tracking.mlflow.svc.cluster.local:80"
   RISINGWAVE_HOST: "risingwave.risingwave.svc.cluster.local"
   RISINGWAVE_PORT: "4567"
   RISINGWAVE_USER: "root"
   RISINGWAVE_DATABASE: "dev"
   SYMBOL: "BTC/USD"
-  DAYS_IN_PAST: "30"
+  DAYS_IN_PAST: "10"
   CANDLE_SECONDS: "60"
   PREDICTION_HORIZON_SECONDS: "300"
   N_ROWS_FOR_DATA_PROFILING: "10"

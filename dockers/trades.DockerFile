@@ -31,4 +31,4 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 ENV PATH="/app/.venv/bin:$PATH"   
 
 # Command to run
-CMD ["uv", "run", "/app/services/get-trades/src/main.py"]
+CMD ["uv", "run", "/app/services/trades/src/main.py"]

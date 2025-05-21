@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: technical-indicators
+  labels:
+    app: technical-indicators
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: technical-indicators
+  template:
+    metadata:
+      labels:
+        app: technical-indicators
+    spec:
+      containers:
+      - name: technical-indicators
+        image: technical-indicators-image
+        imagePullPolicy: Never # Use the local image
+        env:
+        - name: KAFKA_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: technical-indicators-config-map
+              key: KAFKA_HOST
+        - name: KAFKA_TOPIC
+          valueFrom:
+            configMapKeyRef:
+              name: technical-indicators-config-map
+              key: KAFKA_TOPIC
+        - name: TIMEFRAME_CANDLE
+          valueFrom:
+            configMapKeyRef:
+              name: technical-indicators-config-map
+              key: TIMEFRAME_CANDLE
+        - name: MAX_CANDLE_STATE
+          valueFrom:
+            configMapKeyRef:
+              name: technical-indicators-config-map
+              key: MAX_CANDLE_STATE
+        - name: LIST_SMA_PERIODS
+          valueFrom:
+            configMapKeyRef:
+              name: technical-indicators-config-map
+              key: LIST_SMA_PERIODS
