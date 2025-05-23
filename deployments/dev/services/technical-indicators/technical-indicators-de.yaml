@@ -24,11 +24,16 @@ spec:
             configMapKeyRef:
               name: technical-indicators-config-map
               key: KAFKA_HOST
-        - name: KAFKA_TOPIC
+        - name: KAFKA_TOPIC_INPUT
           valueFrom:
             configMapKeyRef:
               name: technical-indicators-config-map
-              key: KAFKA_TOPIC
+              key: KAFKA_TOPIC_INPUT
+        - name: KAFKA_TOPIC_OUTPUT
+          valueFrom:
+            configMapKeyRef:
+              name: technical-indicators-config-map
+              key: KAFKA_TOPIC_OUTPUT
         - name: TIMEFRAME_CANDLE
           valueFrom:
             configMapKeyRef:
@@ -44,3 +49,8 @@ spec:
             configMapKeyRef:
               name: technical-indicators-config-map
               key: LIST_SMA_PERIODS
+        - name: RISINGWAVE_TABLE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: technical-indicators-config-map
+              key: RISINGWAVE_TABLE_NAME

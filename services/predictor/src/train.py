@@ -7,10 +7,11 @@ from ydata_profiling import ProfileReport
 import mlflow
 from mlflow.data.pandas_dataset import PandasDataset
 
-from config import Settings
+from config import SettingsTraining
 from models import BaselineModel, get_model_names, compare_models
 from names import get_experiment_name
 from transform_clean_data import SplitData, TransformCleanData
+from model_registry import push_model_to_registry
 
 from sklearn.metrics import mean_absolute_error
 
@@ -237,16 +238,7 @@ def train(
 
         # If ratio of diff represent less than threshold to select model then registry this new model
         if ratio_diff_mae < treshold_select_model:
-            # Load model in the registry model mlflow
-            mlflow.sklearn.log_model(
-                sk_model=best_model,
-                artifact_path="sklearn-model",
-                input_example=X_train,
-                registered_model_name=f"sk-learn-mode-{experiment_name}",
-            )
-            logger.info(
-                f"New model registered. Ratio difference with base model: {ratio_diff_mae}"
-            )
+            push_model_to_registry(best_model, experiment_name, X_train, ratio_diff_mae)
         else:
             logger.info(
                 "Model wasn't good enough to be published, it has to be at least 5% underneath MAE of base model"
@@ -254,7 +246,7 @@ def train(
 
 
 if __name__ == "__main__":
-    settings = Settings()
+    settings = SettingsTraining()
 
     train(
         settings.RISINGWAVE_HOST,

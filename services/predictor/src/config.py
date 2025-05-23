@@ -1,24 +1,19 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
 from typing import Optional, List
 import os
 
 
-class Settings(BaseSettings):
-    # Use environment variable for settings file path, with a default fallback
-    model_config = SettingsConfigDict(
-        env_file=os.getenv("SETTINGS_FILE", "settings.env"), env_file_encoding="utf-8"
-    )
+class SettingsTraining(BaseSettings):
+    RISINGWAVE_HOST: str = "localhost"
+    RISINGWAVE_PORT: int = 4567
+    RISINGWAVE_USER: str = "root"
+    RISINGWAVE_DATABASE: str = "dev"
 
-    RISINGWAVE_HOST: str
-    RISINGWAVE_PORT: int
-    RISINGWAVE_USER: str
-    RISINGWAVE_DATABASE: str
-
-    SYMBOL: str
-    DAYS_IN_PAST: int
-    CANDLE_SECONDS: int
-    PREDICTION_HORIZON_SECONDS: int
-    N_ROWS_FOR_DATA_PROFILING: Optional[int] = None
+    SYMBOL: str = "BTC/USD"
+    DAYS_IN_PAST: int = 30
+    CANDLE_SECONDS: int = 60
+    PREDICTION_HORIZON_SECONDS: int = 300
+    N_ROWS_FOR_DATA_PROFILING: Optional[int] = 100
 
     # Define the default features as a proper Python list
     LIST_FEATURES: List[str] = [
@@ -43,16 +38,33 @@ class Settings(BaseSettings):
         "obv_7",
     ]
 
-    MLFLOW_TRACKING_URI: str
-    TRAIN_TEST_SPLIT_RATIO: float
+    MLFLOW_TRACKING_URI: str = "http://localhost:8889"
+    TRAIN_TEST_SPLIT_RATIO: float = 0.8
 
     MODEL_NAME: Optional[str] = None
-    TOP_N_MODELS: Optional[int] = None
+    TOP_N_MODELS: Optional[int] = 6
 
-    HYPERPARAM_SEARCH_TRIALS: int
-    HYPERPARAM_SPLITS: int
-    TRESHOLD_NULL_VALUES: float
-    TRESHOLD_SELECT_MODEL: float
+    HYPERPARAM_SEARCH_TRIALS: int = 100
+    HYPERPARAM_SPLITS: int = 5
+    TRESHOLD_NULL_VALUES: float = 0.05
+    TRESHOLD_SELECT_MODEL: float = 0.1
 
+class SettingsInference(BaseSettings):
 
-settings = Settings()
+    RISINGWAVE_HOST: str = "localhost"
+    RISINGWAVE_PORT: int = 4567
+    RISINGWAVE_USER: str = "root"
+    RISINGWAVE_PASSWORD: str = ""
+    RISINGWAVE_DATABASE: str = "dev"
+    RISINGWAVE_INPUT_TABLE: str = "technical_indicators"
+    RISINGWAVE_SCHEMA: str = "public"
+    SYMBOL: str = 'BTC/USD'
+    CANDLE_SECONDS: int = 60
+    PREDICTION_HORIZON_SECONDS: int = 300
+    DAYS_IN_PAST: int = 30
+
+    MLFLOW_TRACKING_URI: str = "http://localhost:8889"
+    MODEL_VERSION: str = "latest"
+    RISINGWAVE_OUTPUT_TABLE: str = "predictors"
+
+settings = SettingsTraining()

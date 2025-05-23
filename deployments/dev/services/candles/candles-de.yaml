@@ -24,8 +24,18 @@ spec:
             configMapKeyRef:
               name: candles-config-map
               key: KAFKA_HOST
-        - name: KAFKA_TOPIC
+        - name: KAFKA_TOPIC_INPUT
           valueFrom:
             configMapKeyRef:
               name: candles-config-map
-              key: KAFKA_TOPIC
+              key: KAFKA_TOPIC_INPUT
+        - name: KAFKA_TOPIC_OUTPUT
+          valueFrom:
+            configMapKeyRef:
+              name: candles-config-map
+              key: KAFKA_TOPIC_OUTPUT
+        - name: TIMEFRAME_CANDLE
+          valueFrom:
+            configMapKeyRef:
+              name: candles-config-map
+              key: TIMEFRAME_CANDLE

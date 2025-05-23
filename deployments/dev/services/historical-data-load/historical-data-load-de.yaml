@@ -97,60 +97,58 @@ spec:
               name: historical-data-load-config-map
               key: CRYPTOS_ID
 
-# ---
+---
 
-# apiVersion: batch/v1
-# kind: Job
-# metadata:
-#   name: technical-indicators
-#   namespace: bitcoin-predictor
-#   labels:
-#     app: technical-indicators
-# spec:
-#   template:
-#     metadata:
-#       labels:
-#         app: technical-indicators
-#     spec:
-#       restartPolicy: Never
-#       containers:
-#       - name: technical-indicators
-#         image: technical-indicators-image
-#         imagePullPolicy: Never # Use the local image
-#         env:
-#         - name: KAFKA_HOST
-#           valueFrom:
-#             configMapKeyRef:
-#               name: historical-data-load-config-map
-#               key: KAFKA_HOST
-#         - name: KAFKA_TOPIC_INPUT
-#           valueFrom:
-#             configMapKeyRef:
-#               name: historical-data-load-config-map
-#               key: KAFKA_TOPIC_CANDLES
-#         - name: KAFKA_TOPIC_OUTPUT
-#           valueFrom:
-#             configMapKeyRef:
-#               name: historical-data-load-config-map
-#               key: KAFKA_TOPIC_TECHNICAL_INDICATORS
-#         - name: TIMEFRAME_CANDLE
-#           valueFrom:
-#             configMapKeyRef:
-#               name: historical-data-load-config-map
-#               key: TIMEFRAME_CANDLE
-#         - name: MAX_CANDLE_STATE
-#           valueFrom:
-#             configMapKeyRef:
-#               name: historical-data-load-config-map
-#               key: MAX_CANDLE_STATE
-#         - name: LIST_SMA_PERIODS
-#           valueFrom:
-#             configMapKeyRef:
-#               name: historical-data-load-config-map
-#               key: LIST_SMA_PERIODS
-#         - name: RISINGWAVE_TABLE_NAME
-#           valueFrom:
-#             configMapKeyRef:
-#               name: historical-data-load-config-map
-#               key: RISINGWAVE_TABLE_NAME
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: technical-indicators-historical
+  namespace: bitcoin-predictor
+  labels:
+    app: technical-indicators-historical
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: technical-indicators
+        image: technical-indicators-image
+        imagePullPolicy: Never # Use the local image
+        env:
+        - name: KAFKA_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: historical-data-load-config-map
+              key: KAFKA_HOST
+        - name: KAFKA_TOPIC_INPUT
+          valueFrom:
+            configMapKeyRef:
+              name: historical-data-load-config-map
+              key: KAFKA_TOPIC_CANDLES
+        - name: KAFKA_TOPIC_OUTPUT
+          valueFrom:
+            configMapKeyRef:
+              name: historical-data-load-config-map
+              key: KAFKA_TOPIC_TECHNICAL_INDICATORS
+        - name: TIMEFRAME_CANDLE
+          valueFrom:
+            configMapKeyRef:
+              name: historical-data-load-config-map
+              key: TIMEFRAME_CANDLE
+        - name: MAX_CANDLE_STATE
+          valueFrom:
+            configMapKeyRef:
+              name: historical-data-load-config-map
+              key: MAX_CANDLE_STATE
+        - name: LIST_SMA_PERIODS
+          valueFrom:
+            configMapKeyRef:
+              name: historical-data-load-config-map
+              key: LIST_SMA_PERIODS
+        - name: RISINGWAVE_TABLE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: historical-data-load-config-map
+              key: RISINGWAVE_TABLE_NAME
           

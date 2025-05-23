@@ -4,7 +4,12 @@ metadata:
   name: technical-indicators-config-map
 data:
   KAFKA_HOST: "kafka-e11b-kafka-bootstrap.kafka.svc.cluster.local:9092"
-  KAFKA_TOPIC: "technical-indicators"
+  KAFKA_TOPIC_INPUT: "candles"
+  KAFKA_TOPIC_OUTPUT: "technical-indicators"
   TIMEFRAME_CANDLE: "60"
-  MAX_CANDLE_STATE: "1000"
+  MAX_CANDLE_STATE: "70"
   LIST_SMA_PERIODS: "[7, 14, 21, 60]"
+  RISINGWAVE_TABLE_NAME: "technical-indicators"
+
+
+

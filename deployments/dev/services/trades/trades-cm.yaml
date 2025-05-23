@@ -4,8 +4,7 @@ metadata:
   name: trades-config-map
 data:
   KAFKA_TOPIC_NAME: "trades"
-  KAFKA_TOPIC_OUTPUT: "trades-historical"
   LIVE_OR_HISTORICAL: "live"
-  KAFKA_HOST: "kafka.kafka.svc.cluster.local:9092"
-  CRYPTOS_ID: '["BTC", "ETH"]'
+  KAFKA_HOST: "kafka-e11b-kafka-bootstrap.kafka.svc.cluster.local:9092"
+  CRYPTOS_ID: '["BTC/USD", "ETH/USD"]'
   LAST_N_DAYS_REST_API: "30"  

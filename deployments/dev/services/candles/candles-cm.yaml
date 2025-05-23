@@ -4,4 +4,7 @@ metadata:
   name: candles-config-map
 data:
   KAFKA_HOST: "kafka-e11b-kafka-bootstrap.kafka.svc.cluster.local:9092"
-  KAFKA_TOPIC: "candles"
+  KAFKA_TOPIC_INPUT: "trades"
+  KAFKA_TOPIC_OUTPUT: "candles"
+  TIMEFRAME_CANDLE: "60"
+  CRYPTOS_ID: '["BTC/USD","ETH/USD"]'

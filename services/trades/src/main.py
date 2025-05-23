@@ -17,14 +17,14 @@ from model import Trade
 
 def run(
     kafka_host: str,
-    kafka_topic_output: str,
+    kafka_topic_name: str,
     api: Kraken_WebSocket_API | Kraken_Rest_API,
 ):
     # Create an Application - the main configuration entry point
     app = Application(broker_address=kafka_host, consumer_group="text-splitter-v1")
 
     # Define a topic with chat messages in JSON format
-    messages_topic = app.topic(name=kafka_topic_output, value_serializer="json")
+    messages_topic = app.topic(name=kafka_topic_name, value_serializer="json")
 
     # create instance trade object where data will be saved
     with app.get_producer() as producer:
@@ -61,4 +61,4 @@ if __name__ == "__main__":
         logger.error("Invalid mode")
         raise ValueError("Invalid mode")
 
-    run(config.kafka_host, config.kafka_topic_output, api)
+    run(config.kafka_host, config.kafka_topic_name, api)

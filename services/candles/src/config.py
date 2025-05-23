@@ -7,12 +7,9 @@ class Settings(BaseSettings):
     )
 
     KAFKA_HOST: str
-    TIMEFRAME_CANDLE: int
     KAFKA_TOPIC_INPUT: str
     KAFKA_TOPIC_OUTPUT: str
+    TIMEFRAME_CANDLE: int
     CRYPTOS_ID: list[str]
-    MAX_CANDLE_STATE: int
-    LIST_SMA_PERIODS: list[int]
-
 
 config = Settings()

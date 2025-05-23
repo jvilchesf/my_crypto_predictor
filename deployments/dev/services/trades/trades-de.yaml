@@ -45,9 +45,3 @@ spec:
             configMapKeyRef:
               name: trades-config-map
               key: LAST_N_DAYS_REST_API
-        - name: KAFKA_TOPIC_OUTPUT
-          valueFrom:
-            configMapKeyRef:
-              name: trades-config-map
-              key: KAFKA_TOPIC_OUTPUT
-              

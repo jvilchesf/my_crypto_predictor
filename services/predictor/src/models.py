@@ -213,7 +213,7 @@ def fit_lazy_regresor_n_models(
 
     logger.info(f"{mlflow_tracking_uri}")
 
-    reg = LazyRegressor(verbose=True, ignore_warnings=True, custom_metric= mean_absolute_error)
+    reg = LazyRegressor(verbose=False, ignore_warnings=True, custom_metric= mean_absolute_error)
     
     logger.info(f"reg: {reg}")
     models, _ = reg.fit(X_train, X_test, y_train, y_test)
@@ -256,7 +256,6 @@ def get_model_names(
     mlflow.log_table(
         df_lazy_predictor, artifact_file="models_evaluation_lazy_predictor.json"
     )
-    logger.info(f"lazy predictor table result = {df_lazy_predictor=}")
 
     return df_lazy_predictor[:top_n_models]
 
@@ -353,6 +352,10 @@ def compare_models(
                 logger.info(
                     f"Compare models: Model {model_name} not found in the models list"
                 )
+                if len(models_name) == count: 
+                    logger.info("First top n models are not included as a trainable model, we will use HuberRegressor as fallback")
+                    mae_list = {'HuberRegressor': 0}
+                    break
                 continue
         # Get the model name with the lowest mae
         best_model = min(mae_list, key=mae_list.get)
